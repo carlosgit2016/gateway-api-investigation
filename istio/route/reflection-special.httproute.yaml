@@ -1,0 +1,59 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-route-reflection-special
+  namespace: mesh-example 
+spec:
+  parentRefs:
+    - name: api-gateway-istio
+      namespace: mesh-example
+  hostnames:
+    - reflection.staging.telematicsplatform.tools
+  rules:
+    # Traffic splitting based on Canary header
+    - matches:
+        - path:
+            value: /
+            type: PathPrefix
+          headers:
+            - name: Canary
+              value: "true" 
+      backendRefs:
+        - name: user
+          port: 8080
+          weight: 10
+        - name: user-v2
+          port: 8080
+          weight: 90
+    # Traffic splitting based on blue-green header
+    - matches:
+        - path:
+            value: /
+            type: PathPrefix
+          headers:
+            - name: blue-green
+              value: "true" 
+      backendRefs:
+        - name: user
+          port: 8080
+          weight: 1
+        - name: user-v2
+          port: 8080
+          weight: 0
+    # Request mirroring
+    - matches:
+        - path:
+            value: /
+            type: PathPrefix
+          headers:
+            - name: Mirroring
+              value: "true" 
+      backendRefs:
+        - name: user
+          port: 8080
+      filters:
+        - type: RequestMirror
+          requestMirror:
+            backendRef:
+              name: user-v2
+              port: 8080

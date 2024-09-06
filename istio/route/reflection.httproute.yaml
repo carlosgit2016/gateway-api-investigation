@@ -1,0 +1,121 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-route-reflection
+  namespace: mesh-example 
+spec:
+  parentRefs:
+    - name: api-gateway-istio
+      namespace: mesh-example
+  hostnames:
+    - reflection.staging.telematicsplatform.tools
+  rules:
+    # /* is routed to the user service
+    - matches:
+        - path:
+            value: /
+            type: PathPrefix
+      backendRefs:
+        - name: user 
+          port: 8080
+    # /* with headers Purpose: inventory is routed to inventory service
+    - matches:
+        - path:
+            value: /
+            type: PathPrefix
+          headers:
+            - name: Purpose
+              value: inventory
+      backendRefs:
+        - name: inventory
+          port: 8080
+    # /add-a-request-header is routed to user service rewriting the path to "/" and adding the header Origin: mc-gateway
+    - matches:
+        - path:
+            value: /add-a-request-header
+            type: Exact
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: 
+              replaceFullPath: /
+              type: ReplaceFullPath 
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            add: # Add header Origin: mc-gateway
+              - name: Origin
+                value: mc-gateway
+      backendRefs:
+        - name: user
+          port: 8080
+    # Modify header Source: bla -> Source: mc-gateway
+    - matches:
+        - path:
+            value: /modify-a-header
+            type: Exact
+          headers:
+            - name: Source
+              value: bla
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: 
+              replaceFullPath: /
+              type: ReplaceFullPath 
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: Source
+                value: mc-gateway
+      backendRefs:
+        - name: user
+          port: 8080    
+    # Delete header Source
+    - matches:
+        - path:
+            value: /delete-a-header
+            type: Exact
+          headers:
+            - name: Source
+              value: bla
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: 
+              replaceFullPath: /
+              type: ReplaceFullPath 
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            remove:
+              - Source
+      backendRefs:
+        - name: user
+          port: 8080
+    # /warehouse/* is routed to warehouse rewriting to "/*" 
+    - matches:
+        - path:
+            value: /warehouse
+            type: PathPrefix
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: 
+              replacePrefixMatch: /
+              type: ReplacePrefixMatch
+      backendRefs:
+        - name: warehouse 
+          port: 8080
+    # /path/to/rewrite/* is routed to warehouse rewriting to "/*"
+    - matches:
+      - path:
+          value: /path/to/rewrite
+          type: PathPrefix
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              replacePrefixMatch: /
+              type: ReplacePrefixMatch 
+      backendRefs:
+        - name: warehouse
+          port: 8080

@@ -1,0 +1,36 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: api-gateway-istio
+  namespace: mesh-example 
+  annotations:
+    service.beta.kubernetes.io/port_80_no_probe_rule: "true" # FOR AZURE
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: default
+      port: 80
+      protocol: HTTP 
+      hostname: "*.staging.telematicsplatform.tools" #  The Addresses field represents a request for the address(es) on the "outside of the Gateway", that traffic bound for this Gateway will use. This could be the IP address or hostname of an external load balancer or other networking infrastructure, or some other address that traffic will be sent to.
+      allowedRoutes:
+        namespaces:
+          from: All
+        kinds:
+            - kind: "HTTPRoute"
+    - name: secure
+      port: 443
+      protocol: HTTPS
+      allowedRoutes:
+          kinds: 
+            - kind: "HTTPRoute"
+      tls:
+        mode: Terminate
+        certificateRefs:
+            - name: https-cert-secret
+    - name: device
+      port: 3001
+      protocol: TCP
+      allowedRoutes:
+        kinds: 
+            - kind: "TCPRoute"
+
