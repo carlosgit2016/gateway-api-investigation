@@ -1,0 +1,19 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: "user-ingress"
+  namespace: mesh-example
+spec:
+  targetRef:
+    kind: Gateway
+    group: gateway.networking.k8s.io
+    name: api-gateway-istio 
+  action: ALLOW 
+  rules:
+  - from:
+    - source:
+        # if <ISS>/<SUB> from the jwt headers do not include any of these values the request will be denied 
+        requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+        notIpBlocks: [
+          "206.0.94.183"
+        ]

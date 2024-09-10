@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: universal
+  name: universal
+  namespace: mesh-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: universal
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: universal
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        key: kubernetes.azure.com/scalesetpriority
+        operator: Equal
+        value: spot
+      containers:
+      - image: carlosflor25/universal-image:latest
+        name: universal-image
+        resources: {}
+        command: ["/bin/bash"]
+        args: ["-c", "sleep infinity"]
+status: {}
